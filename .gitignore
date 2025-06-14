@@ -1,0 +1,99 @@
+# =================================================================
+# General Python
+# =================================================================
+# Byte-compiled / optimized / C extensions
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# =================================================================
+# PySpark & Big Data Specific
+# =================================================================
+# Data files - VERY IMPORTANT!
+# Never commit large data files to Git.
+data/
+# Or if you want to keep the folder structure but ignore content:
+# data/*
+# !data/.gitkeep
+
+# Spark & Hadoop local logs
+logs/
+*.log
+derby.log
+metastore_db/
+
+# Checkpoint directories for Spark Streaming
+checkpoint/
+
+# IDE and Editor specific
+# VS Code
+.vscode/
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# OS-specific files
+# Mac
+.DS_Store
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =================================================================
+# Other
+# =================================================================
+# Temporary files created by Spark
+# These are usually in the system's temp directory, but just in case.
+/temp/
+/tmp/
