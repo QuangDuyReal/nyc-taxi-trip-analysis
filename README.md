@@ -36,8 +36,6 @@ Pipeline được thiết kế theo **Kiến trúc Medallion**, một mô hình 
     -   **Mục tiêu:** Xử lý dữ liệu mới trong thời gian gần thực.
     -   **Đặc điểm:** Sử dụng Spark Structured Streaming để đọc dữ liệu mới, thực hiện các phép tổng hợp trên cửa sổ thời gian (sliding windows) và ghi kết quả ra ngoài.
 
-![Medallion Architecture Diagram](https://user-images.githubusercontent.com/11261397/152882285-b8830870-1349-4f7f-9477-850a588889a7.png)
-*(Lưu ý: Đây là ảnh minh họa)*
 
 ## Công Nghệ Sử Dụng
 
@@ -92,7 +90,7 @@ nyc_taxi_pipeline/
 
 1.  **Clone repository về máy:**
     ```bash
-    git clone <URL_repository_của_bạn>
+    git clone https://github.com/QuangDuyReal/nyc-taxi-trip-analysis
     cd nyc_taxi_pipeline
     ```
 
@@ -147,10 +145,3 @@ Sau khi chạy pipeline batch, mở notebook `notebooks/03_analytics_dashboard.i
 
 ## License
 This project is licensed under the MIT License. See the `LICENSE` file for details.
-Gợi ý thêm:
-
-Ảnh kiến trúc: Bạn nên vẽ một sơ đồ kiến trúc Medallion đơn giản (có thể dùng draw.io, Lucidchart, hoặc thậm chí PowerPoint) và lưu nó dưới dạng file ảnh (ví dụ: architecture.png). Sau đó, tải ảnh này lên repo GitHub và thay thế link ảnh minh họa trong file README để nó hiển thị đúng sơ đồ của bạn.
-
-LICENSE file: Tạo một file mới tên là LICENSE trong thư mục gốc và dán nội dung của giấy phép MIT vào đó. Bạn có thể tìm thấy mẫu giấy phép MIT dễ dàng trên mạng.
-
-Tùy chỉnh: Hãy thoải mái chỉnh sửa các mô tả để phù hợp hơn với những quyết định thiết kế cụ thể mà nhóm bạn đã thực hiện trong quá trình làm đồ án.
