@@ -5,7 +5,7 @@ from pyspark.sql import SparkSession
 
 # Import các hàm xử lý từ các module trong thư mục src
 from src.bronze_layer import process_bronze_layer
-#from src.silver_layer import process_silver_layer
+from src.silver_layer import process_silver_layer
 # from src.gold_layer import process_gold_layer # Sẽ được thêm vào trong các bước tiếp theo
 
 def main():
@@ -23,7 +23,7 @@ def main():
         logger.info("Initializing Spark Session with Delta Lake support...")
         spark = SparkSession.builder \
             .appName("NYC_Taxi_Medallion_Pipeline") \
-            .config("spark.jars.packages", "io.delta:delta-spark_2.12:3.2.0") \
+            .config("spark.jars.packages", "io.delta:delta-spark_2.12:3.3.1") \
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
             .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
             .getOrCreate()

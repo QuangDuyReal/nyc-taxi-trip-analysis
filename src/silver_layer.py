@@ -43,3 +43,29 @@ def create_silver_pipeline(spark, bronze_df):
     .withColumn("processing_timestamp", current_timestamp())
 
     return df_silver
+
+def process_silver_layer(spark, bronze_df):
+    """
+    Function để xử lý Silver layer - wrapper cho create_silver_pipeline
+    """
+    import logging
+    logger = logging.getLogger("SilverLayer")
+    
+    try:
+        # Thực hiện transformations
+        logger.info("Starting Silver Layer transformations...")
+        silver_df = create_silver_pipeline(spark, bronze_df)
+        
+        # Lưu kết quả vào Silver layer
+        logger.info("Saving Silver layer data...")
+        silver_df.write \
+            .mode("overwrite") \
+            .partitionBy("pickup_year", "pickup_month") \
+            .parquet("data/silver/taxi_trips/")
+        
+        logger.info("Silver layer processing completed successfully")
+        return silver_df
+        
+    except Exception as e:
+        logger.error(f"Silver layer processing failed: {str(e)}")
+        raise

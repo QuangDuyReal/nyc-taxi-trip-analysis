@@ -16,8 +16,8 @@ def process_bronze_layer(spark: SparkSession):
     print("Starting Bronze Layer processing...")
 
     # Define paths for input and output
-    raw_data_path = "data/raw/yellow_tripdata_2024-01.parquet"
-    bronze_output_path = "data/bronze/yellow_taxi_trips"
+    raw_data_path = "data/raw/yellow_tripdata_2023-01.parquet"
+    bronze_output_path = "data/bronze/yellow_taxi"
 
     try:
         # --- BEST PRACTICE: INFER SCHEMA FIRST ---
