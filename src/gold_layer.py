@@ -169,36 +169,40 @@ def create_gold_aggregations(spark, silver_df):
         
         # Save hourly stats
         try:
-            hourly_stats.coalesce(10).write.mode("overwrite") \
+            hourly_stats.write.mode("overwrite") \
                 .partitionBy("pickup_year", "pickup_month") \
-                .parquet("data/gold/hourly_trip_analytics/")
+                .option("overwriteSchema", "true") \
+                .format("delta").save("data/gold/hourly_trip_analytics/")
             logger.info("✓ Hourly analytics saved successfully")
         except Exception as e:
             logger.error(f"Error saving hourly analytics: {str(e)}")
         
         # Save location stats
         try:
-            location_stats.coalesce(10).write.mode("overwrite") \
+            location_stats.write.mode("overwrite") \
                 .partitionBy("pickup_hour") \
-                .parquet("data/gold/location_hotspots/")
+                .option("overwriteSchema", "true") \
+                .format("delta").save("data/gold/location_hotspots/")
             logger.info("✓ Location analytics saved successfully")
         except Exception as e:
             logger.error(f"Error saving location analytics: {str(e)}")
         
         # Save payment stats
         try:
-            payment_stats.coalesce(5).write.mode("overwrite") \
+            payment_stats.write.mode("overwrite") \
                 .partitionBy("pickup_year", "pickup_month") \
-                .parquet("data/gold/payment_analytics/")
+                .option("overwriteSchema", "true") \
+                .format("delta").save("data/gold/payment_analytics/")
             logger.info("✓ Payment analytics saved successfully")
         except Exception as e:
             logger.error(f"Error saving payment analytics: {str(e)}")
         
         # Save vendor stats
         try:
-            vendor_stats.coalesce(5).write.mode("overwrite") \
+            vendor_stats.write.mode("overwrite") \
                 .partitionBy("pickup_year", "pickup_month") \
-                .parquet("data/gold/vendor_performance/")
+                .option("overwriteSchema", "true") \
+                .format("delta").save("data/gold/vendor_performance/")
             logger.info("✓ Vendor performance analytics saved successfully")
         except Exception as e:
             logger.error(f"Error saving vendor performance analytics: {str(e)}")
