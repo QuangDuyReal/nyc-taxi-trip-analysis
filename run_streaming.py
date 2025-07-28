@@ -7,7 +7,7 @@ def main():
     logger = logging.getLogger("RunStreaming")
 
     try:
-        duration_minutes = 5  # Bạn có thể sửa thời gian ở đây nếu muốn
+        duration_minutes = 1  # Bạn có thể sửa thời gian ở đây nếu muốn
         logger.info(f"Starting streaming pipeline for {duration_minutes} minutes...")
         run_streaming_pipeline(duration_minutes=duration_minutes)
         logger.info("Streaming pipeline completed successfully.")
