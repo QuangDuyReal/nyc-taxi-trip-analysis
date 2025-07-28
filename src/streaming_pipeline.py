@@ -1,15 +1,19 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
+import time
 
-def create_streaming_pipeline():
+def run_streaming_pipeline(duration_minutes=10):
     spark = SparkSession.builder \
         .appName("NYC_Taxi_Streaming") \
         .config("spark.sql.streaming.checkpointLocation", "checkpoint/") \
         .getOrCreate()
 
     # Read streaming data from file source (simulation)
+    schema = spark.read.parquet("data/raw/yellow_tripdata_2024-01.parquet").schema
+
     streaming_df = spark.readStream \
+        .schema(schema) \
         .format("parquet") \
         .option("path", "data/raw/yellow_tripdata_2024-01.parquet") \
         .option("maxFilesPerTrigger", 1) \
@@ -20,8 +24,8 @@ def create_streaming_pipeline():
         .withColumn("pickup_hour", hour("tpep_pickup_datetime")) \
         .withColumn("trip_duration_minutes",
             (unix_timestamp("tpep_dropoff_datetime") -
-            unix_timestamp("tpep_pickup_datetime")) / 60) \
-    .filter(col("trip_duration_minutes") > 0)
+             unix_timestamp("tpep_pickup_datetime")) / 60) \
+        .filter(col("trip_duration_minutes") > 0)
 
     # Real-time aggregations (sliding windows)
     windowed_counts = streaming_processed \
@@ -54,4 +58,10 @@ def create_streaming_pipeline():
         .trigger(processingTime="1 minute") \
         .start()
 
-    return query_console, query_files
+    # Wait for the specified duration
+    spark.streams.awaitAnyTermination(duration_minutes * 60)
+
+    # Stop all active streams
+    query_console.stop()
+    query_files.stop()
+    spark.stop()
