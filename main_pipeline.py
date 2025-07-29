@@ -1,37 +1,39 @@
 import logging
 import sys
+from delta import configure_spark_with_delta_pip
 from pyspark.sql import SparkSession
 
 # Import các hàm xử lý từ các module trong thư mục src
 from src.bronze_layer import process_bronze_layer
 from src.silver_layer import process_silver_layer
 from src.gold_layer import process_gold_layer
-# from src.streaming_pipeline import create_streaming_pipeline, run_streaming_pipeline
+from src.data_quality import DataQualityChecker
+from src.streaming_pipeline import run_streaming_pipeline
 
 def main():
     """
     Hàm chính điều phối toàn bộ pipeline dữ liệu, chạy tuần tự các lớp
-    Bronze -> Silver -> Gold -> Streaming (optional).
+    Bronze -> Silver -> Data Quality -> Gold -> Streaming (optional).
     """
-    # Thiết lập logging để theo dõi tiến trình một cách chuyên nghiệp
+    # Thiết lập logging để theo dõi tiến trình
     logging.basicConfig(level=logging.INFO, format='%(asctime)s: %(levelname)s: %(name)s: %(message)s')
     logger = logging.getLogger("MainPipeline")
-    
+
     spark = None  # Khởi tạo spark là None để có thể dùng trong khối finally
     try:
         # --- KHỞI TẠO SPARK SESSION ---
         logger.info("Initializing Spark Session with Delta Lake support...")
-        spark = SparkSession.builder \
+        builder = SparkSession.builder \
             .appName("NYC_Taxi_Medallion_Pipeline") \
-            .config("spark.jars.packages", "io.delta:delta-spark_2.12:3.3.1") \
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
             .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
             .config("spark.sql.adaptive.enabled", "true") \
             .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
-            .config("spark.sql.streaming.checkpointLocation", "checkpoint/") \
-            .getOrCreate()
+            .config("spark.sql.streaming.checkpointLocation", "checkpoint/")
+
+        spark = configure_spark_with_delta_pip(builder).getOrCreate()
         logger.info("Spark Session initialized successfully.")
-        
+
         # --- BƯỚC 1: THỰC THI BRONZE LAYER ---
         logger.info("========== Starting Bronze Layer Processing ==========")
         bronze_df = process_bronze_layer(spark)
@@ -50,12 +52,20 @@ def main():
             logger.error("Silver Layer Processing Failed. Aborting pipeline.")
             return
 
-        # --- BƯỚC 3: THỰC THI GOLD LAYER ---
+        # --- BƯỚC 3: DATA QUALITY CHECK ---
+        logger.info("========== Running Data Quality Checks on Silver Layer ==========")
+        dq = DataQualityChecker(spark)
+        metrics = dq.check_data_quality(silver_df, layer_name="silver")
+        report = dq.generate_quality_report(metrics)
+        print("\nDATA QUALITY REPORT:\n" + report + "\n")
+        logger.info("========== Data Quality Check Completed ==========")
+
+        # --- BƯỚC 4: THỰC THI GOLD LAYER ---
         logger.info("========== Starting Gold Layer Processing ==========")
         gold_tables = process_gold_layer(spark, silver_df)
         if gold_tables:
             logger.info("========== Gold Layer Processing Completed Successfully ==========")
-            
+
             # In thông tin tóm tắt
             logger.info("=== PIPELINE SUMMARY ===")
             logger.info(f"Gold layer tables created: {len(gold_tables)}")
@@ -69,28 +79,35 @@ def main():
             logger.error("Gold Layer Processing Failed.")
             return
 
-        # --- BƯỚC 4: STREAMING PIPELINE (OPTIONAL) ---
-        # if "--streaming" in sys.argv:
-        #     logger.info("========== Starting Streaming Pipeline ==========")
-            
-        #     # Lấy duration từ command line hoặc mặc định 10 phút
-        #     duration = 10
-        #     if "--duration" in sys.argv:
-        #         try:
-        #             duration_index = sys.argv.index("--duration") + 1
-        #             duration = int(sys.argv[duration_index])
-        #         except (ValueError, IndexError):
-        #             logger.warning("Invalid duration argument, using default 10 minutes")
-            
-        #     # Chạy streaming pipeline
-        #     run_streaming_pipeline(duration_minutes=duration)
-        #     logger.info("========== Streaming Pipeline Completed ==========")
+        # --- BƯỚC 5: STREAMING PIPELINE (OPTIONAL) ---
 
-        logger.info(">>>>>>>>> ENTIRE PIPELINE COMPLETED SUCCESSFULLY <<<<<<<<<")
+        try:
+            # --- BƯỚC 5: STREAMING PIPELINE ---
+            logger.info("========== Starting Streaming Pipeline ==========")
+            # Xác định thời lượng chạy mặc định (phút)
+            duration = 10
+            
+            # Kiểm tra nếu có tham số duration được truyền qua command line
+            if "--duration" in sys.argv:
+                try:
+                    duration_index = sys.argv.index("--duration") + 1
+                    duration = int(sys.argv[duration_index])
+                    logger.info(f"Running streaming pipeline for {duration} minutes")
+                except (ValueError, IndexError):
+                    logger.warning("Invalid duration argument, using default 10 minutes")
+            
+            # Gọi hàm run_streaming_pipeline từ streaming_pipeline.py
+            try:
+                run_streaming_pipeline(duration_minutes=duration)
+                logger.info("========== Streaming Pipeline Completed Successfully ==========")
+            except Exception as e:
+                logger.error(f"Streaming Pipeline failed: {str(e)}", exc_info=True)
+            
+            logger.info(">>>>>>>>>> ENTIRE PIPELINE COMPLETED SUCCESSFULLY <<<<<<<<<")
 
-    except Exception as e:
-        logger.error(f"!!!!!!!!!! MAIN PIPELINE EXECUTION FAILED !!!!!!!!!!", exc_info=True)
-    
+        except Exception as e:
+            logger.error(f"!!!!!!!!!! MAIN PIPELINE EXECUTION FAILED !!!!!!!!!!", exc_info=True)
+
     finally:
         if spark:
             logger.info("Stopping Spark Session.")
