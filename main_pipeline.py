@@ -8,14 +8,14 @@ from src.bronze_layer import process_bronze_layer
 from src.silver_layer import process_silver_layer
 from src.gold_layer import process_gold_layer
 from src.data_quality import DataQualityChecker
-# from src.streaming_pipeline import create_streaming_pipeline, run_streaming_pipeline
+from src.streaming_pipeline import run_streaming_pipeline
 
 def main():
     """
     Hàm chính điều phối toàn bộ pipeline dữ liệu, chạy tuần tự các lớp
     Bronze -> Silver -> Data Quality -> Gold -> Streaming (optional).
     """
-    # Thiết lập logging để theo dõi tiến trình một cách chuyên nghiệp
+    # Thiết lập logging để theo dõi tiến trình
     logging.basicConfig(level=logging.INFO, format='%(asctime)s: %(levelname)s: %(name)s: %(message)s')
     logger = logging.getLogger("MainPipeline")
 
@@ -79,10 +79,34 @@ def main():
             logger.error("Gold Layer Processing Failed.")
             return
 
-        logger.info(">>>>>>>>>> ENTIRE PIPELINE COMPLETED SUCCESSFULLY <<<<<<<<<")
+        # --- BƯỚC 5: STREAMING PIPELINE (OPTIONAL) ---
 
-    except Exception as e:
-        logger.error(f"!!!!!!!!!! MAIN PIPELINE EXECUTION FAILED !!!!!!!!!!", exc_info=True)
+        try:
+            # --- BƯỚC 5: STREAMING PIPELINE ---
+            logger.info("========== Starting Streaming Pipeline ==========")
+            # Xác định thời lượng chạy mặc định (phút)
+            duration = 10
+            
+            # Kiểm tra nếu có tham số duration được truyền qua command line
+            if "--duration" in sys.argv:
+                try:
+                    duration_index = sys.argv.index("--duration") + 1
+                    duration = int(sys.argv[duration_index])
+                    logger.info(f"Running streaming pipeline for {duration} minutes")
+                except (ValueError, IndexError):
+                    logger.warning("Invalid duration argument, using default 10 minutes")
+            
+            # Gọi hàm run_streaming_pipeline từ streaming_pipeline.py
+            try:
+                run_streaming_pipeline(duration_minutes=duration)
+                logger.info("========== Streaming Pipeline Completed Successfully ==========")
+            except Exception as e:
+                logger.error(f"Streaming Pipeline failed: {str(e)}", exc_info=True)
+            
+            logger.info(">>>>>>>>>> ENTIRE PIPELINE COMPLETED SUCCESSFULLY <<<<<<<<<")
+
+        except Exception as e:
+            logger.error(f"!!!!!!!!!! MAIN PIPELINE EXECUTION FAILED !!!!!!!!!!", exc_info=True)
 
     finally:
         if spark:
