@@ -5,4 +5,4 @@ seaborn==0.12.2
 plotly==5.15.0
 jupyter==1.0.0
 delta-spark==2.4.0
-pyarrow==12.0.1
+pyarrow==12.0.0

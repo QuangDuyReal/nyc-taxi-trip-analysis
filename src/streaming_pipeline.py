@@ -27,7 +27,7 @@ def init_spark_session():
 
 def get_taxi_schema():
     """Define the schema for the NYC Taxi data"""
-    from pyspark.sql.types import LongType
+    from pyspark.sql.types import LongType, IntegerType
     
     return StructType([
         StructField("VendorID", LongType(), True),
@@ -37,8 +37,8 @@ def get_taxi_schema():
         StructField("trip_distance", DoubleType(), True),
         StructField("RatecodeID", LongType(), True),
         StructField("store_and_fwd_flag", StringType(), True),
-        StructField("PULocationID", LongType(), True),
-        StructField("DOLocationID", LongType(), True),
+        StructField("PULocationID", IntegerType(), True),  # Changed from LongType to IntegerType
+        StructField("DOLocationID", IntegerType(), True),  # Changed from LongType to IntegerType
         StructField("payment_type", LongType(), True),
         StructField("fare_amount", DoubleType(), True),
         StructField("extra", DoubleType(), True),
@@ -80,7 +80,7 @@ def simulate_data_arrival(spark, input_dir, duration_minutes=10):
     logger.info(f"Starting data arrival simulation for {duration_minutes} minutes")
     
     # Source data directory with sample parquet files
-    sample_file = "data/raw/yellow_tripdata_2023-01.parquet"
+    sample_file = "data/raw/yellow_tripdata_2024-01.parquet"
     
     if not os.path.exists(sample_file):
         logger.error(f"Sample file {sample_file} not found. Cannot simulate data arrival.")
@@ -442,17 +442,24 @@ def run_streaming_pipeline(duration_minutes=10):
             try:
                 for output_type in ["time_metrics", "location_metrics", "payment_metrics"]:
                     output_path = f"{output_dir}/{output_type}"
-                    if os.path.exists(output_path):
-                        result_df = spark.read.format("delta").load(output_path)
-                        count = result_df.count()
-                        logger.info(f"Streaming output summary - {output_type}: {count} records processed")
+                    delta_log_path = os.path.join(output_path, "_delta_log")
+
+                    if os.path.exists(delta_log_path):
+                        try:
+                            result_df = spark.read.format("delta").load(output_path)
+                            count = result_df.count()
+                            logger.info(f"Streaming output summary - {output_type}: {count} records processed")
+                        except Exception as e:
+                            logger.warning(f"Could not read delta table at {output_path}: {str(e)}")
+                    else:
+                        logger.warning(f"Delta table not found at {output_path}, skipping summary.")
             except Exception as e:
                 logger.error(f"Error generating summary: {str(e)}")
-        
+                
     except Exception as e:
         logger.error(f"Error in streaming pipeline: {str(e)}")
     
     logger.info("Streaming pipeline completed")
 if __name__ == "__main__":
     # This allows the module to be run standalone for testing
-    run_streaming_pipeline(duration_minutes=5)
+    run_streaming_pipeline(duration_minutes=10)

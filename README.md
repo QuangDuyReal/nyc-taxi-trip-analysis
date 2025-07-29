@@ -67,81 +67,76 @@ nyc_taxi_pipeline/
 │ └── main_pipeline.py # Script chính để thực thi toàn bộ pipeline
 ├── notebooks/
 │ ├── 01_data_exploration.ipynb
-│ ├── 02_pipeline_development.ipynb
-│ └── 03_analytics_dashboard.ipynb # Notebook để visualize kết quả
+│ └── 02_analytics_dashboard.ipynb # Notebook để visualize kết quả
 ├── config/
 │ ├── spark_config.py
 │ └── pipeline_config.yaml
-├── tests/
-│ ├── test_bronze_layer.py
-│ └── test_silver_layer.py
 ├── checkpoint/ # Checkpoints cho streaming
-├── logs/ # Log của ứng dụng
 ├── requirements.txt # Các thư viện Python cần thiết
 └── README.md # Tài liệu hướng dẫn này
 ```
 ## Hướng Dẫn Cài Đặt và Chạy Dự Án
 
 ### 1. Yêu cầu Cần có
--   Java 8+ (bắt buộc cho Spark)
--   Python 3.8+ và `pip`
+
+-   **Java 8+** (bắt buộc cho Spark, nên dùng bản LTS)
+-   **Apache Spark 3.4+** (cài đặt local hoặc sử dụng qua PySpark, đã test tốt với Spark 3.4.1)
+-   **Hadoop** (chỉ cần cho môi trường Windows để Spark truy cập hệ thống file, không cần cài full cluster):
+    -   Tải [winutils.exe](https://github.com/steveloughran/winutils) và đặt vào thư mục `hadoop/bin`
+    -   Đảm bảo có file `hadoop.dll` trong thư mục `hadoop/bin` (nếu thiếu, Spark sẽ báo lỗi khi chạy trên Windows)
+    -   Thiết lập biến môi trường:  
+        -   `HADOOP_HOME` trỏ tới thư mục Hadoop  
+        -   Thêm `hadoop/bin` vào `PATH`
+-   **Python 3.8+** và `pip`
+-   **Các thư viện Python**: cài qua `requirements.txt`
+-   **(Khuyến nghị)**: Jupyter Notebook để xem kết quả phân tích
+
+**Lưu ý cho Windows:**  
+Nếu chạy Spark trên Windows, bạn *bắt buộc* phải có `winutils.exe` và `hadoop.dll` đúng vị trí, nếu không Spark sẽ không thể ghi/đọc file hệ thống.
 
 ### 2. Cài đặt
 
 1.  **Clone repository về máy:**
     ```bash
     git clone https://github.com/QuangDuyReal/nyc-taxi-trip-analysis
-    cd nyc_taxi_pipeline
+    cd nyc-taxi-trip-analysis
     ```
 
-2.  **Tạo và kích hoạt môi trường ảo (khuyến khích):**
+2.  **Cài đặt Java, Spark, Hadoop (nếu chưa có):**
+    -   [Tải Java](https://adoptium.net/) và cài đặt
+    -   [Tải Spark](https://spark.apache.org/downloads.html) (chọn bản phù hợp với Hadoop 3.x)
+    -   [Tải winutils.exe cho Hadoop](https://github.com/steveloughran/winutils) (Windows)
+    -   Thiết lập biến môi trường:  
+        -   `JAVA_HOME`  
+        -   `SPARK_HOME`  
+        -   `HADOOP_HOME`  
+        -   Thêm `bin` của Spark và Hadoop vào `PATH`
+
+3.  **Tạo và kích hoạt môi trường ảo (khuyến khích):**
     ```bash
-    python3 -m venv venv
+    python -m venv venv
+    # Linux/macOS:
     source venv/bin/activate
-    # Đối với Windows: venv\Scripts\activate
+    # Windows:
+    venv\Scripts\activate
     ```
 
-3.  **Cài đặt các thư viện cần thiết:**
+4.  **Cài đặt các thư viện Python cần thiết:**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Tải dữ liệu mẫu:**
+5.  **Tải dữ liệu mẫu:**
     ```bash
-    # Tạo thư mục để chứa dữ liệu thô
     mkdir -p data/raw
-
-    # Tải file parquet mẫu (tháng 1, 2024)
-    wget https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet -P data/raw/
+    curl -L "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet" -o data/raw/yellow_tripdata_2024-01.parquet
     ```
-    *Lưu ý: Để chạy với nhiều dữ liệu hơn, hãy tải thêm các file từ [NYC TLC website](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page) và đặt vào thư mục `data/raw/`.*
+    *Hoặc tải thêm dữ liệu từ [NYC TLC website](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page) và đặt vào `data/raw/`.*
 
-### 3. Chạy Pipeline
-
-Bạn có thể chạy toàn bộ pipeline batch hoặc pipeline streaming thông qua `main_pipeline.py`.
-
--   **Chạy pipeline Batch (Bronze → Silver → Gold):**
-    Mở terminal, đảm bảo môi trường ảo đã được kích hoạt và chạy lệnh sau:
-    ```bash
-    python src/main_pipeline.py
-    ```
-    Quá trình này sẽ đọc dữ liệu từ `data/raw`, xử lý qua các lớp Bronze, Silver và lưu kết quả vào `data/gold`.
-
--   **Chạy pipeline Streaming (Tùy chọn):**
-    Để chạy pipeline streaming, bạn cần chuẩn bị dữ liệu trong thư mục `data/streaming_input/`. Sau đó, chạy với cờ `--streaming`:
-    ```bash
-    python src/main_pipeline.py --streaming
-    ```
-    Pipeline sẽ bắt đầu theo dõi thư mục đầu vào và xử lý các file mới xuất hiện.
-
-### 4. Xem Kết quả Phân tích
-Sau khi chạy pipeline batch, mở notebook `notebooks/03_analytics_dashboard.ipynb` bằng Jupyter để xem các phân tích và trực quan hóa từ dữ liệu ở lớp Gold.
 
 ## Thành viên Nhóm
--   **Đỗ Kiến Hưng(darktheDE)** (Team Leader/Data Engineer)
--   **Vũ Đặng Tuấn Anh** (Data Pipeline Engineer)
--   **Nguyễn Văn Quang Duy(QuangDuyReal)** (Streaming Engineer)
--   **Nguyễn Văn Hiền** (Analytics Engineer)
+-   **Đỗ Kiến Hưng(darktheDE)** (Team Leader/Data Engineer, Data Pipeline Engineer)
+-   **Nguyễn Văn Quang Duy(QuangDuyReal)** (Streaming Engineer, Analytics Engineer)
 
 ## License
 This project is licensed under the MIT License. See the `LICENSE` file for details.
